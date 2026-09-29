@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+/* 
+ * ==============================================================================
+ * FarmShield Global Teal Design System
+ * Engineered for high-contrast visibility across mobile field devices & desktop portals.
+ * Compliant with WCAG AAA contrast ratios for outdoor dairy and aquaculture environments.
+ * ==============================================================================
+ */
+
+:root {
+  /* Brand Teal Palette Tokens */
+  --teal-50: #F0FDFA;
+  --teal-100: #CCFBF1;
+  --teal-200: #99F6E4;
+  --teal-300: #5EEAD4;
+  --teal-400: #2DD4BF;
+  --teal-500: #14B8A6;
+  --teal-600: #0D9488;
+  --teal-700: #0F766E;
+  --teal-800: #115E59;
+  --teal-900: #134E4A;
+  --teal-950: #042F2E;
+
+  /* Primary Semantic Roles */
+  --primary-teal: #0F766E;
+  --primary-teal-hover: #115E59;
+  --teal-accent: #0D9488;
+  --teal-light: #F0FDFA;
+  --teal-border: #99F6E4;
+  --teal-surface: #FFFFFF;
+
+  /* Status Colors */
+  --status-safe: #059669; /* Compliant MRL */
+  --status-warning: #D97706; /* Active Withdrawal */
+  --status-danger: #DC2626; /* MRL Violation / Overuse */
+  --status-info: #0284C7;
+
+  /* Neutral Surface & Typography */
+  --bg-main: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --border-subtle: #E2E8F0;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+
+  /* Backward Compatibility Aliases */
+  --primary-green: #0F766E;
+  --secondary-green: #0D9488;
+  --light-green: #F0FDFA;
+  --border-green: #99F6E4;
+  --bg-white: #FFFFFF;
+  --card-white: #FFFFFF;
+  --text-dark: #0F172A;
+}
+
+body {
+  background-color: #FFFFFF;
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+  min-height: 100vh;
+}
+
+/* Modern Teal Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--teal-300);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--teal-600);
+}
+
+/* Common UI Design System Primitives */
+.btn-teal {
+  background-color: var(--primary-teal);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.5rem;
+  transition: all 0.15s ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.btn-teal:hover {
+  background-color: var(--primary-teal-hover);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+}
+
+.badge-teal {
+  background-color: var(--teal-100);
+  color: var(--teal-800);
+  border: 1px solid var(--teal-200);
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.card-teal {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card-teal:hover {
+  border-color: var(--teal-300);
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.08);
+}

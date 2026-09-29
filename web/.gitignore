@@ -1,0 +1,84 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+.yarn/
+.pnpm-store/
+
+# Next.js Build & Outputs
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment Variables & Secrets
+.env
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+*.crt
+*.pfx
+
+# Firebase, Supabase & Cloud Credentials
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+**/firebase.json
+**/*serviceAccount*.json
+**/*service-account*.json
+*.keystore
+*.jks
+key.properties
+**/secrets.xml
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Testing & Coverage
+/coverage
+.nyc_output/
+
+# IDE & OS Specific
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Python & ML Artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+venv/
+.venv/
+env/
+ENV/
+*.onnx
+*.pt
+*.safetensors
+*.h5
+*.pkl
+
+# Vercel & Render Build Directories
+.vercel
+.render/
+
