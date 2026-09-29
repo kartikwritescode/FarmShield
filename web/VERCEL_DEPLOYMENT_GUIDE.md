@@ -1,39 +1,47 @@
 # 🚀 Vercel Frontend Deployment Guide (FarmShield)
 
-This guide provides instructions to ensure seamless deployment to Vercel at `https://newproject-nu-gray.vercel.app/`.
+This guide provides instructions to ensure seamless deployment of FarmShield Web to [Vercel](https://vercel.com).
 
 ---
 
-## 🔍 How FarmShield Deploys on Vercel
+## 🎯 Quick Configuration Summary
 
-The repository is configured to deploy the Next.js application in `frontend/` automatically via the root `vercel.json`:
-```json
-{
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "outputDirectory": "frontend/.next",
-  "framework": "nextjs"
-}
-```
+| Setting | Value |
+| :--- | :--- |
+| **Framework Preset** | `Next.js` |
+| **Root Directory** | `web` *(or `web/`)* |
+| **Build Command** | `npm run build` *(or `next build`)* |
+| **Output Directory** | `.next` *(Automatically handled by Next.js preset)* |
+| **Install Command** | `npm install` |
 
 ---
 
-## 🛠️ Vercel Project Settings (Recommended)
+## 🛠️ Vercel Project Settings (Recommended - 2 Steps)
 
-1. Open your project in the **[Vercel Dashboard](https://vercel.com/dashboard)** (`new_project`).
-2. Navigate to **Settings** ➔ **General**.
-3. Under **Root Directory**, you can either:
-   - Keep it as `./` (the root `vercel.json` automatically handles building `frontend/.next`).
-   - Or set **Root Directory** to `frontend` (standard Next.js preset).
-4. Go to **Deployments** ➔ Click the three dots `...` next to the latest deployment ➔ Click **Redeploy**.
+1. **Import Project into Vercel:**
+   - Go to [https://vercel.com/new](https://vercel.com/new).
+   - Select your `FarmShield` repository.
+
+2. **Configure Project Settings:**
+   - Under **Root Directory**, click **Edit** and set it to **`web`**.
+   - Vercel automatically selects the **Next.js** framework preset.
+   - Expand **Environment Variables** and add the variables listed below.
+   - Click **Deploy**.
+
+> **Note:** If you leave Root Directory as `./` (repo root), the root `vercel.json` will automatically direct the build to `web/` without breaking!
 
 ---
 
 ## ⚙️ Environment Variables on Vercel
 
-In **Project Settings** ➔ **Environment Variables**, ensure you have:
+In **Project Settings** ➔ **Environment Variables**, add:
 
 | Variable | Description | Example / Recommended |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL | `https://your-project.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | `eyJhbGci...` |
-| `NEXT_PUBLIC_APP_URL` | Vercel Deployment URL | `https://newproject-nu-gray.vercel.app` |
+| `NEXT_PUBLIC_API_URL` | Render Backend API URL | `https://farmshield-backend-api.onrender.com/api/` |
+| `BACKEND_API_URL` | Render Backend Domain | `https://farmshield-backend-api.onrender.com` |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL | `https://dykjepfsrndzamkkzcxf.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | `your_supabase_anon_key` |
+| `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Cloudinary Cloud Name (optional) | `dwfowhzwn` |
+| `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`| Cloudinary Preset (optional) | `dashsocial` |
+

@@ -10,7 +10,7 @@ This guide provides step-by-step instructions to host the **FarmShield Backend A
 | :--- | :--- |
 | **Service Type** | **Web Service** |
 | **Repository** | `https://github.com/vikashkr96/FarmShield-for-SIH-` |
-| **Root Directory** | `backend` |
+| **Root Directory** | `web/backend` *(or `web/backend/`)* |
 | **Runtime** | `Node` |
 | **Build Command** | `npm install && npm run build` |
 | **Start Command** | `npm start` |
@@ -31,14 +31,14 @@ This guide provides step-by-step instructions to host the **FarmShield Backend A
    - Select **`Web Service`**.
 
 3. **Connect Your GitHub Repository:**
-   - Select `vikashkr96/FarmShield-for-SIH-` (or paste your repo URL).
+   - Select `FarmShield` (or paste your repo URL `https://github.com/kartikwritescode/FarmShield.git`).
    - Click **`Connect`**.
 
 4. **Configure Service Details:**
    - **Name:** `farmshield-backend-api` (or any name you prefer)
    - **Region:** `Singapore` (Fastest for India) or `Oregon`
-   - **Branch:** `main`
-   - **Root Directory:** `backend` *(⚠️ Very Important! Must be `backend`)*
+   - **Branch:** `master` (or `main`)
+   - **Root Directory:** `web/backend` *(⚠️ Very Important! Must be `web/backend`)*
    - **Runtime:** `Node`
    - **Build Command:** `npm install && npm run build`
    - **Start Command:** `npm start`

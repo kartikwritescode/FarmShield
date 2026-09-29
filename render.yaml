@@ -1,11 +1,12 @@
 services:
-  # FarmShield Backend API Service
+  # FarmShield Backend API Service on Render
+  # Root Folder: web/backend/
   - type: web
     name: farmshield-backend-api
     runtime: node
-    rootDir: backend
+    rootDir: web/backend
     plan: free
-    region: singapore # or frankfurt / oregon / ohio
+    region: singapore
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -24,4 +25,3 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
-

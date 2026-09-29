@@ -3,9 +3,8 @@ services:
   - type: web
     name: farmshield-backend-api
     runtime: node
-    rootDir: backend
     plan: free
-    region: singapore # or frankfurt / oregon / ohio
+    region: singapore
     buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
@@ -24,4 +23,3 @@ services:
         sync: false
       - key: FRONTEND_URL
         sync: false
-
