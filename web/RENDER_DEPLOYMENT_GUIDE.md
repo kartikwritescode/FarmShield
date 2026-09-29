@@ -60,11 +60,11 @@ This guide provides step-by-step instructions to host the **FarmShield Backend A
    - Render will clone the repository, install dependencies, compile TypeScript (`tsc`), and start the Express server!
 
 7. **Verify Deployment:**
-   - Once the deploy log shows `🚀 FarmSheild Express API Server running`, copy your live Render URL (e.g. `https://farmshield-backend-api.onrender.com`).
+   - Once the deploy log shows `🚀 FarmSheild Express API Server running`, copy your live Render URL (e.g. `https://farmshield-buvy.onrender.com`).
    - Test in your browser:
-     - Root: `https://farmshield-backend-api.onrender.com/`
-     - Health Check: `https://farmshield-backend-api.onrender.com/api/health`
-     - Animals List: `https://farmshield-backend-api.onrender.com/api/animals`
+     - Root: `https://farmshield-buvy.onrender.com/`
+     - Health Check: `https://farmshield-buvy.onrender.com/api/health`
+     - Animals List: `https://farmshield-buvy.onrender.com/api/animals`
 
 ---
 
@@ -73,7 +73,7 @@ This guide provides step-by-step instructions to host the **FarmShield Backend A
 Because we added `render.yaml` to the root of your repo, you can also deploy via Blueprints:
 
 1. In Render Dashboard, click **`New +`** ➔ **`Blueprint`**.
-2. Select `vikashkr96/FarmShield-for-SIH-`.
+2. Select your repository.
 3. Render will read `render.yaml` and configure everything automatically.
 4. Click **`Apply`** to launch!
 
@@ -84,6 +84,7 @@ Because we added `render.yaml` to the root of your repo, you can also deploy via
 Once your backend is live on Render:
 1. In your frontend configuration or `.env.local`:
    ```ini
-   NEXT_PUBLIC_API_URL=https://farmshield-backend-api.onrender.com
+   NEXT_PUBLIC_API_URL=https://farmshield-buvy.onrender.com/api/
    ```
 2. Any frontend hosted on **Vercel** or **localhost:3000** will immediately communicate with your live Render backend without CORS errors!
+

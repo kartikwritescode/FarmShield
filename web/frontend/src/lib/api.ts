@@ -8,7 +8,7 @@
 import { authStore } from './authStore';
 
 // Common backend API endpoint fallback
-export const DEFAULT_API_BASE_URL = 'https://farmshield-backend-api.onrender.com/api/';
+export const DEFAULT_API_BASE_URL = 'https://farmshield-buvy.onrender.com/api/';
 
 /**
  * Resolves and normalizes the API base URL ensuring a trailing slash

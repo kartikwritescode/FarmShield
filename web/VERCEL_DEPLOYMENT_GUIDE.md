@@ -38,8 +38,8 @@ In **Project Settings** ➔ **Environment Variables**, add:
 
 | Variable | Description | Example / Recommended |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_API_URL` | Render Backend API URL | `https://farmshield-backend-api.onrender.com/api/` |
-| `BACKEND_API_URL` | Render Backend Domain | `https://farmshield-backend-api.onrender.com` |
+| `NEXT_PUBLIC_API_URL` | Render Backend API URL | `https://farmshield-buvy.onrender.com/api/` |
+| `BACKEND_API_URL` | Render Backend Domain | `https://farmshield-buvy.onrender.com` |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase Project URL | `https://dykjepfsrndzamkkzcxf.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Anon Key | `your_supabase_anon_key` |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | Cloudinary Cloud Name (optional) | `dwfowhzwn` |

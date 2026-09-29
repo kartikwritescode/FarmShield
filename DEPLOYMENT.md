@@ -57,8 +57,8 @@ This repository is configured for one-click deployment of the **Backend API** to
 
 | Key | Example Value | Description |
 | :--- | :--- | :--- |
-| `NEXT_PUBLIC_API_URL` | `https://farmshield-backend-api.onrender.com/api/` | URL of your live Render backend API |
-| `BACKEND_API_URL` | `https://farmshield-backend-api.onrender.com` | Base URL of your Render backend |
+| `NEXT_PUBLIC_API_URL` | `https://farmshield-buvy.onrender.com/api/` | URL of your live Render backend API |
+| `BACKEND_API_URL` | `https://farmshield-buvy.onrender.com` | Base URL of your Render backend |
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://dykjepfsrndzamkkzcxf.supabase.co` | Supabase URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | *(your Supabase anon key)* | Supabase public anon key |
 | `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` | `dwfowhzwn` | Cloudinary cloud name (optional) |
