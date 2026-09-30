@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/farm_models.dart';
 import '../../../data/repositories/farm_repository.dart';
 import '../../../core/theme/app_colors.dart';
@@ -13,8 +12,6 @@ import '../../../core/theme/app_spacing.dart';
 class LabResultsController extends GetxController {
   final FarmRepository repository;
   LabResultsController({required this.repository});
-
-  final _supabase = Supabase.instance.client;
 
   final isLoading = false.obs;
   final animals = <Animal>[].obs;
@@ -135,18 +132,13 @@ class LabResultsController extends GetxController {
         'laboratory': laboratory.isNotEmpty ? laboratory : 'FSSAI Accredited Central Lab',
       };
 
-      // 1. Direct Supabase Insert
-      try {
-        await _supabase.from('lab_results').insert(payload);
-      } catch (e) {
-        Get.log("Supabase lab_results insert note: $e");
-        await repository.submitLabResults({
-          ...payload,
-          'mrl_threshold': mrl,
-          'status': isCompliant.value ? 'COMPLIANT' : 'NON_COMPLIANT',
-          'lab_report_pdf_url': fileUrl,
-        });
-      }
+      // Save locally & queue for sync via offline-first repository
+      await repository.submitLabResults({
+        ...payload,
+        'mrl_threshold': mrl,
+        'status': isCompliant.value ? 'COMPLIANT' : 'NON_COMPLIANT',
+        'lab_report_pdf_url': fileUrl,
+      });
 
       _showSuccessDialog();
     } catch (e) {

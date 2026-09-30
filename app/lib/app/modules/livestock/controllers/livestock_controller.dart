@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,6 +7,7 @@ import '../../../core/services/cloudinary_service.dart';
 import '../../../data/models/farm_models.dart';
 import '../../../data/models/health_models.dart';
 import '../../../data/repositories/farm_repository.dart';
+import '../../../data/services/local_database_service.dart';
 
 class LivestockController extends GetxController with StateMixin<List<Animal>> {
   final FarmRepository repository;
@@ -17,17 +19,34 @@ class LivestockController extends GetxController with StateMixin<List<Animal>> {
   String? selectedImageName;
   final RxBool isUploading = false.obs;
   final CloudinaryService _cloudinary = CloudinaryService();
+  StreamSubscription? _dbSubscription;
 
   @override
   void onInit() {
     super.onInit();
     // Reactively fetch animals when selected species changes
     ever(selectedSpecies, (_) => fetchAnimals());
+
+    // Listen to local database changes for reactive updates
+    _dbSubscription = LocalDatabaseService().watchAnimals().listen((_) {
+      fetchAnimals(isBackground: true);
+    });
+
     fetchAnimals();
   }
 
-  Future<void> fetchAnimals() async {
-    change(null, status: RxStatus.loading());
+  @override
+  void onClose() {
+    _dbSubscription?.cancel();
+    super.onClose();
+  }
+
+  Future<void> fetchAnimals({bool isBackground = false}) async {
+    // Only show loading if we don't already have rendered state (avoid blank screen flicker)
+    if (state == null && !isBackground) {
+      change(null, status: RxStatus.loading());
+    }
+
     try {
       final selected = selectedSpecies.value.toLowerCase().trim();
       final allAnimals = await repository.getAnimals();
@@ -55,7 +74,7 @@ class LivestockController extends GetxController with StateMixin<List<Animal>> {
         change(animals, status: RxStatus.success());
       }
 
-      // Fetch herd health analytics
+      // Fetch herd health analytics from local data
       try {
         final summary = await repository.getHerdHealthSummary(
           species: selected == 'all' ? null : selected,
@@ -64,7 +83,9 @@ class LivestockController extends GetxController with StateMixin<List<Animal>> {
       } catch (_) {}
     } catch (e) {
       Get.log("Fetch Animals Error: $e");
-      change(null, status: RxStatus.error(e.toString()));
+      if (state == null) {
+        change(null, status: RxStatus.error(e.toString()));
+      }
     }
   }
 
@@ -88,7 +109,7 @@ class LivestockController extends GetxController with StateMixin<List<Animal>> {
       );
       return result.secureUrl;
     } catch (e) {
-      Get.snackbar("Upload Error", "Failed to upload image to Cloudinary: $e");
+      Get.log("Upload Error (will use local fallback): $e");
       return null;
     } finally {
       isUploading.value = false;
@@ -103,15 +124,20 @@ class LivestockController extends GetxController with StateMixin<List<Animal>> {
         animal.imageUrl = imageUrl;
       }
       
+      // Save locally & queue for sync optimistically
       await repository.registerAnimal(animal);
-      fetchAnimals(); // Refresh the list
+      await fetchAnimals(isBackground: true);
+
       selectedImageBytes.value = null;
       selectedImageName = null;
       Get.back();
-      Get.snackbar('Success', 'Animal registered successfully', 
+      Get.snackbar(
+        'Animal Registered',
+        'Saved to local farm registry and queued for synchronization.',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white);
+        backgroundColor: Colors.green.shade800,
+        colorText: Colors.white,
+      );
     } catch (e) {
       Get.snackbar('Error', 'Failed to register animal: $e');
     } finally {

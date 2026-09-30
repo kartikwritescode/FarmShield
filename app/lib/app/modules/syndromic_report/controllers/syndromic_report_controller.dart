@@ -1,5 +1,8 @@
 import 'package:get/get.dart';
-import '../../../core/services/offline_storage_service.dart';
+import '../../../data/services/local_database_service.dart';
+import '../../../data/sync/sync_engine.dart';
+import '../../../data/sync/sync_mutation.dart';
+import '../../../data/sync/sync_queue.dart';
 
 class SyndromicReportController extends GetxController {
   final selectedSpecies = 'cow'.obs;
@@ -44,8 +47,10 @@ class SyndromicReportController extends GetxController {
   Future<void> submitReport() async {
     isSubmitting.value = true;
     try {
+      final reportId = 'rep_mob_${DateTime.now().millisecondsSinceEpoch}';
       final reportData = {
-        'client_report_id': 'rep_mob_${DateTime.now().millisecondsSinceEpoch}',
+        'client_report_id': reportId,
+        'id': reportId,
         'reporter_role': 'farmer',
         'species': selectedSpecies.value,
         'affected_count': affectedCount.value,
@@ -53,14 +58,29 @@ class SyndromicReportController extends GetxController {
         'latitude': latitude.value,
         'longitude': longitude.value,
         'symptoms': Map<String, bool>.from(symptoms),
+        'created_at': DateTime.now().toIso8601String(),
       };
 
-      await OfflineStorageService().saveDiseaseReportLocally(reportData);
+      await LocalDatabaseService().saveDiseaseReport(reportData, markLocalUpdate: true);
+      
+      final mutation = SyncMutation(
+        id: 'mut_$reportId',
+        entityType: MutationEntityType.diseaseReport,
+        operation: MutationOperation.create,
+        clientEntityId: reportId,
+        payload: reportData,
+        timestamp: DateTime.now(),
+      );
+      await SyncQueue().enqueue(mutation);
+
+      if (Get.isRegistered<SyncEngine>()) {
+        SyncEngine.to.notifyMutationAdded();
+      }
 
       Get.back();
       Get.snackbar(
         'Report Registered',
-        'Disease report saved locally. Background auto-sync is active.',
+        'Disease report saved locally and queued for background synchronization.',
         snackPosition: SnackPosition.BOTTOM,
       );
     } finally {

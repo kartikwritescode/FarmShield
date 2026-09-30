@@ -1,16 +1,18 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:dio/dio.dart' as dio;
 import '../../../data/models/farm_models.dart';
+import '../../../data/repositories/farm_repository.dart';
+import '../../../data/services/local_database_service.dart';
 import '../../../core/values/constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
 class MedicinesCatalogController extends GetxController {
-  final _supabase = Supabase.instance.client;
+  final FarmRepository repository = Get.find<FarmRepository>();
   final _picker = ImagePicker();
   
   var isLoading = false.obs;
@@ -19,25 +21,33 @@ class MedicinesCatalogController extends GetxController {
   var searchQuery = ''.obs;
   var selectedClass = 'All'.obs;
   final antimicrobialClasses = ['All', 'Penicillins', 'Tetracyclines', 'Fluoroquinolones (CIA)'];
+  StreamSubscription? _dbSubscription;
 
   @override
   void onInit() {
     super.onInit();
     fetchMedicines();
+
+    _dbSubscription = LocalDatabaseService().watchMedicines().listen((_) {
+      fetchMedicines(isBackground: true);
+    });
   }
 
-  Future<void> fetchMedicines() async {
-    try {
-      isLoading.value = true;
-      final response = await _supabase
-          .from('medicines')
-          .select('*, regulatory_rules(*)')
-          .order('name', ascending: true);
+  @override
+  void onClose() {
+    _dbSubscription?.cancel();
+    super.onClose();
+  }
 
-      final List data = response as List;
-      medicines.value = data.map((e) => Medicine.fromJson(e)).toList();
+  Future<void> fetchMedicines({bool isBackground = false}) async {
+    try {
+      if (!isBackground && medicines.isEmpty) {
+        isLoading.value = true;
+      }
+      final list = await repository.getMedicines();
+      medicines.assignAll(list);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to fetch medicines: $e');
+      Get.log('Failed to fetch medicines: $e');
     } finally {
       isLoading.value = false;
     }
@@ -332,33 +342,32 @@ class MedicinesCatalogController extends GetxController {
         imageUrl = await _uploadToCloudinary(imageFile);
       }
 
-      // 1. Insert Medicine
-      final medicineResponse = await _supabase.from('medicines').insert({
-        'name': name,
-        'active_ingredient': ingredient,
-        'antimicrobial_class': drugClass,
-        'strength': strength,
-        'status': 'Approved',
-        'image_url': imageUrl,
-      }).select().single();
+      final med = Medicine(
+        id: 'med_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        activeIngredient: ingredient,
+        antimicrobialClass: drugClass,
+        strength: strength,
+        status: 'Approved',
+        imageUrl: imageUrl,
+        rules: [
+          RegulatoryRule(
+            id: 'rule_${DateTime.now().millisecondsSinceEpoch}',
+            species: 'Cattle',
+            product: 'Milk',
+            mrl: mrl,
+            withdrawalDays: withdrawalDays,
+            jurisdiction: 'FSSAI',
+            source: 'FSSAI Gazette Standards',
+            version: '2024.1',
+            approvalStatus: 'Active',
+          ),
+        ],
+      );
 
-      final medicineId = medicineResponse['id'];
-
-      // 2. Insert Regulatory Rule (FSSAI Default)
-      await _supabase.from('regulatory_rules').insert({
-        'medicine_id': medicineId,
-        'species': 'Cattle',
-        'product': 'Milk',
-        'mrl': mrl,
-        'withdrawal_days': withdrawalDays,
-        'jurisdiction': 'FSSAI',
-        'source': 'FSSAI Gazette Notification',
-        'version': '2024.1',
-        'approval_status': 'Active',
-      });
-
-      await fetchMedicines();
-      Get.snackbar('Success', 'Medicine and Rule published successfully');
+      await repository.saveMedicine(med);
+      await fetchMedicines(isBackground: true);
+      Get.snackbar('Success', 'Medicine and MRL Rule saved locally and queued for sync.');
     } catch (e) {
       Get.snackbar('Error', 'Failed to save: $e');
     } finally {

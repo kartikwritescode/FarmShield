@@ -1,18 +1,17 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/cloudinary_service.dart';
 import '../../../core/services/offline_storage_service.dart';
 import '../../../data/models/farm_models.dart';
 import '../../../data/models/health_models.dart';
 import '../../../data/repositories/farm_repository.dart';
+import '../../../data/services/local_database_service.dart';
 
 class AnimalDetailController extends GetxController with StateMixin<Map<String, dynamic>> {
   final FarmRepository repository;
   AnimalDetailController({required this.repository});
 
-  final _supabase = Supabase.instance.client;
   final CloudinaryService _cloudinary = CloudinaryService();
   
   final RxBool isUploading = false.obs;
@@ -73,80 +72,52 @@ class AnimalDetailController extends GetxController with StateMixin<Map<String, 
     }
   }
 
-  bool _isUuid(String str) {
-    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
-    return uuidRegex.hasMatch(str.trim());
-  }
-
   Future<void> fetchAnimalFullProfile(String id) async {
-    // If we already have preview data, keep showing it while fetching updates in background
+    // 1. Check Local Database FIRST (Instant rendering)
+    final localAnimal = LocalDatabaseService().getAnimalById(id);
+    if (localAnimal != null) {
+      final treatments = LocalDatabaseService().getAllTreatments(animalId: localAnimal.id ?? id);
+      final withdrawals = LocalDatabaseService().getAllWithdrawals(animalId: localAnimal.id ?? id);
+
+      final fullData = localAnimal.toMap();
+      fullData['treatments'] = treatments.map((t) => t.toJson()).toList();
+      fullData['withdrawals'] = withdrawals.map((w) => {
+        'id': w.id,
+        'treatment_id': w.treatmentId,
+        'animal_id': w.animalId,
+        'product': w.product,
+        'start_date': w.startDate.toIso8601String(),
+        'end_date': w.endDate.toIso8601String(),
+        'status': w.status,
+      }).toList();
+
+      change(fullData, status: RxStatus.success());
+      return;
+    }
+
     if (_passedAnimalData == null) {
       change(null, status: RxStatus.loading());
     }
     
     try {
-      Map<String, dynamic>? animalData;
+      // 2. Resolve via repository (which handles online lookup + caching)
+      final resolved = await repository.resolveAnimalByQr(id);
+      if (resolved != null) {
+        final treatments = LocalDatabaseService().getAllTreatments(animalId: resolved.id ?? id);
+        final withdrawals = LocalDatabaseService().getAllWithdrawals(animalId: resolved.id ?? id);
 
-      if (_isUuid(id)) {
-        final res = await _supabase.from('animals').select().eq('id', id).maybeSingle();
-        if (res != null) animalData = Map<String, dynamic>.from(res);
-      } else {
-        // Query by animal_code or qr_token if not a UUID
-        final res = await _supabase
-            .from('animals')
-            .select()
-            .or('animal_code.eq.$id,qr_token.eq.$id')
-            .maybeSingle();
-        if (res != null) animalData = Map<String, dynamic>.from(res);
-      }
+        final fullData = resolved.toMap();
+        fullData['treatments'] = treatments.map((t) => t.toJson()).toList();
+        fullData['withdrawals'] = withdrawals.map((w) => {
+          'id': w.id,
+          'treatment_id': w.treatmentId,
+          'animal_id': w.animalId,
+          'product': w.product,
+          'start_date': w.startDate.toIso8601String(),
+          'end_date': w.endDate.toIso8601String(),
+          'status': w.status,
+        }).toList();
 
-      // If found in Supabase, fetch related treatments and withdrawals
-      if (animalData != null) {
-        final realId = animalData['id'].toString();
-        List<dynamic> treatmentsData = [];
-        List<dynamic> withdrawalsData = [];
-
-        try {
-          if (_isUuid(realId)) {
-            final tRes = await _supabase.from('treatments').select().eq('animal_id', realId);
-            treatmentsData = List<dynamic>.from(tRes);
-
-            final wRes = await _supabase.from('withdrawals').select().eq('animal_id', realId);
-            withdrawalsData = List<dynamic>.from(wRes);
-          }
-        } catch (_) {}
-
-        if (treatmentsData.isNotEmpty) {
-          final List<String> medicineIds = treatmentsData
-              .map((t) => t['medicine_id'] as String?)
-              .where((mid) => mid != null && _isUuid(mid))
-              .toSet()
-              .cast<String>()
-              .toList();
-
-          if (medicineIds.isNotEmpty) {
-            try {
-              final medicinesData = await _supabase
-                  .from('medicines')
-                  .select()
-                  .inFilter('id', medicineIds);
-
-              for (var t in treatmentsData) {
-                t['medicine'] = (medicinesData as List).firstWhereOrNull(
-                  (m) => m['id'] == t['medicine_id'],
-                );
-              }
-            } catch (_) {}
-          }
-        }
-
-        final Map<String, dynamic> fullData = Map<String, dynamic>.from(animalData);
-        fullData['treatments'] = treatmentsData;
-        fullData['withdrawals'] = withdrawalsData;
-
-        // Persist to local cache
-        await OfflineStorageService().cacheAnimal(fullData);
-        
         change(fullData, status: RxStatus.success());
         return;
       }

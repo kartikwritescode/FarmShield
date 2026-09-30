@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/farm_models.dart';
 
+import '../../data/services/local_database_service.dart';
+
 class FcmAlertService extends GetxService {
   static FcmAlertService get to => Get.find<FcmAlertService>();
 
@@ -26,9 +28,11 @@ class FcmAlertService extends GetxService {
             event: PostgresChangeEvent.insert,
             schema: 'public',
             table: 'alerts',
-            callback: (payload) {
+            callback: (payload) async {
               final newRecord = payload.newRecord;
               final alert = Alert.fromJson(newRecord);
+              // Reconcile into local database first
+              await LocalDatabaseService().saveAlert(alert);
               liveAlerts.insert(0, alert);
               showInAppAlertBanner(alert);
             },

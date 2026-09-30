@@ -23,6 +23,7 @@ import '../widgets/quick_actions_grid.dart';
 import '../widgets/withdrawal_countdown_card.dart';
 import '../widgets/weather_risk_card.dart';
 import '../widgets/disease_trend_chart.dart';
+import '../../../core/widgets/sync_status_indicator.dart';
 
 class DashboardView extends GetView<DashboardController> {
   const DashboardView({super.key});
@@ -176,6 +177,11 @@ class DashboardView extends GetView<DashboardController> {
         backgroundColor: AppColors.primary,
         elevation: 0,
         actions: [
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: SyncStatusIndicator(),
+          ),
+          const SizedBox(width: 4),
           _buildLanguageSwitcher(),
           Obx(() {
             final alertCount = controller.alerts.length;
@@ -281,9 +287,35 @@ class DashboardView extends GetView<DashboardController> {
             ],
           ),
         ),
-        onError: (error) => AppEmptyState.error(
-          message: error,
-          onRetry: () => controller.loadDashboardData(),
+        onError: (error) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.cloud_off_rounded, size: 52, color: AppColors.primary),
+                const SizedBox(height: 16),
+                Text("You're Offline", style: AppTypography.titleMedium),
+                const SizedBox(height: 8),
+                Text(
+                  "Showing your saved farm safety records. All changes will sync automatically when back online.",
+                  textAlign: TextAlign.center,
+                  style: AppTypography.bodySmall.copyWith(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 18),
+                ElevatedButton.icon(
+                  onPressed: () => controller.loadDashboardData(),
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Reload Saved Data'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: AppSpacing.roundedSm),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

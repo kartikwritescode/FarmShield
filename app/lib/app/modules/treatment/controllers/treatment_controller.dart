@@ -1,19 +1,14 @@
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../data/models/farm_models.dart';
 import '../../../data/repositories/farm_repository.dart';
-import '../../../core/services/offline_storage_service.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 
 class TreatmentController extends GetxController {
   final FarmRepository repository;
   TreatmentController({required this.repository});
-
-  final _supabase = Supabase.instance.client;
 
   final isLoading = false.obs;
   final medicines = <Medicine>[].obs;
@@ -137,47 +132,11 @@ class TreatmentController extends GetxController {
   Future<void> submitTreatment(Treatment treatment) async {
     isLoading.value = true;
     try {
-      final List<ConnectivityResult> connectivityResults = await Connectivity().checkConnectivity();
-      
-      if (connectivityResults.contains(ConnectivityResult.none)) {
-        // Offline storage
-        await OfflineStorageService().saveTreatmentLocally(treatment.toJson());
-        Get.back();
-        Get.snackbar(
-          'offline_sync'.tr, 
-          'treatment_saved_offline'.tr,
-          backgroundColor: Colors.orange.shade800,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM,
-          duration: const Duration(seconds: 4),
-        );
-      } else {
-        // 1. Online insertion to Supabase / Backend
-        String treatmentId = treatment.id ?? '';
-        try {
-          final res = await _supabase.from('treatments').insert(treatment.toJson()).select().single();
-          treatmentId = res['id']?.toString() ?? '';
+      // 1. Optimistic local persistence, withdrawal calculation, and sync queueing
+      await repository.addTreatment(treatment);
 
-          // 2. Auto-insert Withdrawal Ticker in Supabase
-          if (treatmentId.isNotEmpty && treatment.animalId != null) {
-            final wEndDate = estimatedClearanceDate;
-            await _supabase.from('withdrawals').insert({
-              'treatment_id': treatmentId,
-              'animal_id': treatment.animalId,
-              'product': treatment.productAffected ?? 'milk',
-              'start_date': treatment.startDate?.toIso8601String() ?? DateTime.now().toIso8601String(),
-              'end_date': wEndDate.toIso8601String(),
-              'status': 'active',
-            });
-          }
-        } catch (e) {
-          Get.log("Direct Supabase treatment insert note: $e");
-          await repository.addTreatment(treatment);
-        }
-
-        // 3. Show Rich ML Risk & Compliance Dialog
-        _showModernRiskDialog(treatment);
-      }
+      // 2. Show Rich ML Risk & Compliance Dialog
+      _showModernRiskDialog(treatment);
     } catch (e) {
       Get.snackbar('Error', 'Failed to record treatment: $e', snackPosition: SnackPosition.BOTTOM);
     } finally {

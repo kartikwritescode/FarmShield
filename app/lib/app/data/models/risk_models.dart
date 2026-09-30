@@ -151,6 +151,19 @@ class RiskResponse {
   List<String>? reasonCodes;
   String? recommendedAction;
   String? clearanceBadge;
+  List<String>? recommendations;
+
+  RiskResponse({
+    this.status,
+    this.model,
+    this.riskLevel,
+    this.probabilityDistribution,
+    this.riskScore,
+    this.reasonCodes,
+    this.recommendedAction,
+    this.clearanceBadge,
+    this.recommendations,
+  });
 
   RiskResponse.fromJson(Map<String, dynamic> json) {
     final Map<String, dynamic> data = (json['data'] is Map<String, dynamic>) 

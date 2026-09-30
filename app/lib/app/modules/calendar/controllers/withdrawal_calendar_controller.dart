@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'package:get/get.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../data/models/farm_models.dart';
+import '../../../data/repositories/farm_repository.dart';
+import '../../../data/services/local_database_service.dart';
 
 class WithdrawalCalendarController extends GetxController {
-  final _supabase = Supabase.instance.client;
+  final FarmRepository repository = Get.find<FarmRepository>();
 
   var focusedDay = DateTime.now().obs;
   var selectedDay = DateTime.now().obs;
@@ -15,193 +17,39 @@ class WithdrawalCalendarController extends GetxController {
 
   var selectedFilter = 'All Herd'.obs;
   final filters = ['All Herd', 'Dairy Cattle', 'Buffaloes', 'Goats & Sheep', 'Fishery Ponds'];
+  StreamSubscription? _dbSubscription;
 
   @override
   void onInit() {
     super.onInit();
     fetchWithdrawals();
+
+    // Listen to local database changes so new treatments reactively appear on calendar
+    _dbSubscription = LocalDatabaseService().watchWithdrawals().listen((_) {
+      fetchWithdrawals(isBackground: true);
+    });
   }
 
-  Future<void> fetchWithdrawals() async {
+  @override
+  void onClose() {
+    _dbSubscription?.cancel();
+    super.onClose();
+  }
+
+  Future<void> fetchWithdrawals({bool isBackground = false}) async {
     try {
-      isLoading.value = true;
+      if (!isBackground && withdrawals.isEmpty) {
+        isLoading.value = true;
+      }
       
-      // 1. Fetch withdrawals from Supabase
-      List<dynamic> rawWithdrawals = [];
-      try {
-        final res = await _supabase.from('withdrawals').select().order('end_date', ascending: true);
-        rawWithdrawals = List<dynamic>.from(res);
-      } catch (_) {}
-
-      // 2. Fetch associated animals and treatments
-      if (rawWithdrawals.isNotEmpty) {
-        final animalIds = rawWithdrawals
-            .map((w) => w['animal_id']?.toString())
-            .where((id) => id != null && id.isNotEmpty)
-            .toSet()
-            .toList();
-
-        final treatmentIds = rawWithdrawals
-            .map((w) => w['treatment_id']?.toString())
-            .where((id) => id != null && id.isNotEmpty)
-            .toSet()
-            .toList();
-
-        Map<String, dynamic> animalsMap = {};
-        Map<String, dynamic> treatmentsMap = {};
-        Map<String, dynamic> medicinesMap = {};
-
-        if (animalIds.isNotEmpty) {
-          try {
-            final aRes = await _supabase.from('animals').select().inFilter('id', animalIds);
-            for (var a in aRes) {
-              animalsMap[a['id'].toString()] = a;
-            }
-          } catch (_) {}
-        }
-
-        if (treatmentIds.isNotEmpty) {
-          try {
-            final tRes = await _supabase.from('treatments').select().inFilter('id', treatmentIds);
-            for (var t in tRes) {
-              treatmentsMap[t['id'].toString()] = t;
-            }
-
-            final medIds = treatmentsMap.values
-                .map((t) => t['medicine_id']?.toString())
-                .where((m) => m != null && m.isNotEmpty)
-                .toSet()
-                .toList();
-
-            if (medIds.isNotEmpty) {
-              final mRes = await _supabase.from('medicines').select().inFilter('id', medIds);
-              for (var m in mRes) {
-                medicinesMap[m['id'].toString()] = m;
-              }
-            }
-          } catch (_) {}
-        }
-
-        final parsed = rawWithdrawals.map((w) {
-          final aJson = animalsMap[w['animal_id']?.toString()];
-          final tJson = treatmentsMap[w['treatment_id']?.toString()];
-          final mJson = tJson != null ? medicinesMap[tJson['medicine_id']?.toString()] : null;
-
-          final wMap = Map<String, dynamic>.from(w);
-          if (aJson != null) wMap['animals'] = aJson;
-          if (tJson != null) {
-            wMap['treatment'] = tJson;
-            wMap['indication'] = tJson['indication'];
-          }
-          if (mJson != null) {
-            wMap['medicine_name'] = mJson['name'];
-          }
-          return Withdrawal.fromJson(wMap);
-        }).toList();
-
-        withdrawals.value = parsed;
-      }
-
-      // 3. Fallback / Prototype dataset if database has limited records
-      if (withdrawals.isEmpty) {
-        _populatePrototypeData();
-      }
+      // Fetch from offline-first repository
+      final list = await repository.getWithdrawals();
+      withdrawals.assignAll(list);
     } catch (e) {
       Get.log('Withdrawal fetch note: $e');
-      _populatePrototypeData();
     } finally {
       isLoading.value = false;
     }
-  }
-
-  void _populatePrototypeData() {
-    final now = DateTime.now();
-    withdrawals.value = [
-      Withdrawal(
-        id: 'proto-w1',
-        treatmentId: 'proto-t1',
-        animalId: 'proto-a1',
-        product: 'milk',
-        startDate: now.subtract(const Duration(days: 2)),
-        endDate: now.add(const Duration(days: 3)),
-        status: 'active',
-        animal: Animal(
-          id: 'proto-a1',
-          farmId: 'farm-01',
-          animalCode: 'COW-GIR-01',
-          species: 'cow',
-          breed: 'Gir',
-          healthStatus: 'under_treatment',
-          purpose: 'milk',
-        ),
-        medicineName: 'Amoxicillin Trihydrate 15%',
-        indication: 'Clinical Mastitis',
-        dosage: '10 mg/kg IM',
-      ),
-      Withdrawal(
-        id: 'proto-w2',
-        treatmentId: 'proto-t2',
-        animalId: 'proto-a2',
-        product: 'milk',
-        startDate: now.subtract(const Duration(days: 4)),
-        endDate: now.add(const Duration(days: 1)),
-        status: 'active',
-        animal: Animal(
-          id: 'proto-a2',
-          farmId: 'farm-01',
-          animalCode: 'BUF-MUR-01',
-          species: 'buffalo',
-          breed: 'Murrah Buffalo',
-          healthStatus: 'under_treatment',
-          purpose: 'milk',
-        ),
-        medicineName: 'Oxytetracycline LA 20%',
-        indication: 'Hemorrhagic Septicemia',
-        dosage: '20 mg/kg IM',
-      ),
-      Withdrawal(
-        id: 'proto-w3',
-        treatmentId: 'proto-t3',
-        animalId: 'proto-a3',
-        product: 'meat',
-        startDate: now.subtract(const Duration(days: 6)),
-        endDate: now.add(const Duration(days: 5)),
-        status: 'active',
-        animal: Animal(
-          id: 'proto-a3',
-          farmId: 'farm-01',
-          animalCode: 'GOAT-JAM-01',
-          species: 'goat',
-          breed: 'Jamnapari Goat',
-          healthStatus: 'under_treatment',
-          purpose: 'meat',
-        ),
-        medicineName: 'Enrofloxacin 10% Inj',
-        indication: 'Caprine Pneumonia',
-        dosage: '5 mg/kg SC',
-      ),
-      Withdrawal(
-        id: 'proto-w4',
-        treatmentId: 'proto-t4',
-        animalId: 'proto-a4',
-        product: 'milk',
-        startDate: now.subtract(const Duration(days: 7)),
-        endDate: now,
-        status: 'completed',
-        animal: Animal(
-          id: 'proto-a4',
-          farmId: 'farm-01',
-          animalCode: 'COW-SAH-02',
-          species: 'cow',
-          breed: 'Sahiwal',
-          healthStatus: 'healthy',
-          purpose: 'milk',
-        ),
-        medicineName: 'Ceftiofur Sodium',
-        indication: 'Metritis Clean-up',
-        dosage: '2.2 mg/kg IM',
-      ),
-    ];
   }
 
   List<Withdrawal> get filteredWithdrawals {

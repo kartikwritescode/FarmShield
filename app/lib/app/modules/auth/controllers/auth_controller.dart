@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../routes/app_pages.dart';
 import '../../../core/values/constants.dart';
+import '../../../data/services/local_database_service.dart';
 
 class AuthController extends GetxController {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -24,6 +25,17 @@ class AuthController extends GetxController {
     super.onInit();
     final session = _supabase.auth.currentSession;
     currentUser.value = session?.user;
+
+    // Load cached profile immediately for offline startup
+    final cached = LocalDatabaseService().getUserProfile(session?.user.id ?? '') ??
+        LocalDatabaseService().getLatestUserProfile();
+    if (cached != null) {
+      userProfile.assignAll(cached);
+      if (cached['role'] != null) {
+        selectedRole.value = normalizeRole(cached['role'].toString());
+      }
+    }
+
     if (session?.user != null) {
       syncAndFetchUserProfile(session!.user);
     }
@@ -121,6 +133,9 @@ class AuthController extends GetxController {
           userProfile.assignAll(newProfile);
         }
       }
+
+      // Persist to local database
+      await LocalDatabaseService().saveUserProfile(userProfile);
     } catch (e) {
       Get.log("syncAndFetchUserProfile error: $e");
     }
